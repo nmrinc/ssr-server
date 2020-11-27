@@ -7,6 +7,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 
 const { config } = require("./config");
+const { THIRTY_DAYS_IN_SEC, TWO_HOURS_IN_SEC } = require('./utils/time');
 
 const app = express();
 
@@ -21,7 +22,12 @@ app.use(helmet());
 //@concept Basic Strategy
 require('./utils/auth/strategies/basic');
 
+
+
 app.post("/auth/sign-in", async function (req, res, next) {
+  //@a Obtain the rememberMe attribute from the req body
+  const { rememberMe } = req.body;
+
   //@a Generate the req with passport and a basic strategy
   passport.authenticate(
     'basic', (error, data) => {
@@ -35,7 +41,9 @@ app.post("/auth/sign-in", async function (req, res, next) {
           //@o Must be httpOnly and secure only on production environment. So we can test and use on dev without problem.
           res.cookie('token', token, {
             httpOnly: !config.dev,
-            secure: !config.dev
+            secure: !config.dev,
+            //@o If rememberMe exists, define the age to a month, if not define it to 2 hours
+            maxAge: rememberMe ? THIRTY_DAYS_IN_SEC : TWO_HOURS_IN_SEC
           });
 
           //@a Response with a 200 status and the user.
