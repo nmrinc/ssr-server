@@ -6,6 +6,8 @@ const axios = require('axios');
 const cors = require('cors');
 const helmet = require('helmet');
 
+const debug = require('debug')('app:server');
+
 const { config } = require("./config");
 const { THIRTY_DAYS_IN_SEC, TWO_HOURS_IN_SEC } = require('./utils/time');
 
@@ -37,6 +39,10 @@ app.post("/auth/sign-in", async function (req, res, next) {
         req.login(data, { session: false }, async (error) => {
           if (error) { next(error); }
 
+          //@o With the basic strategy we obtain data at login.
+          //@a destructure token and user from the data obtained.
+          const { token, ...user } = data;
+
           //@a If there's no error, create a cookie, passing the token.
           //@o Must be httpOnly and secure only on production environment. So we can test and use on dev without problem.
           res.cookie('token', token, {
@@ -57,7 +63,7 @@ app.post("/auth/sign-in", async function (req, res, next) {
 });
 
 app.post("/auth/sign-up", async function (req, res, next) {
-  const { bode: user } = req;
+  const { body: user } = req;
 
   try {
     await axios({
@@ -77,13 +83,64 @@ app.get("/movies", async function (req, res, next) {
 });
 
 app.post("/user-movies", async function (req, res, next) {
+  try {
+    //@a Obtain userMovie from the request body
+    const { body: userMovie } = req;
+    //@a Obtain the token from the request cookies.
+    const { token } = req.cookies;
 
+    const { data, status } = await axios({
+      url: `${config.apiUrl}/api/user-movies`,
+      //@a Add a header of authorization with a bearer token type, passing the token obtained from the cookie.
+      headers: { Authorization: `Bearer ${token}` },
+      method: 'post',
+      data: userMovie
+    });
+
+    //@a If the res status it's different to 201, return a bad implementation boom error
+    //@o Commonly return an HTTP 500 code. Meaning that something has gone wrong on the website's server, but the server could not be more specific on what the exact problem is.
+    if (status !== 201) { return next(boom.badImplementation()); }
+
+    res.status(201).json(data);
+  } catch (e) {
+    next(e);
+  }
 });
 
 app.delete("/user-movies/:userMovieId", async function (req, res, next) {
+  try {
+    //@a Obtain userMovieId from the request params
+    const { userMovieId } = req.params;
+    const { token } = req.cookies;
 
+    const { data, status } = await axios({
+      //@a Add the movie id obtained from the params to the url
+      url: `${config.apiUrl}/api/user-movies/${userMovieId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      method: 'delete'
+    });
+
+    if (status !== 200) { return next(boom.badImplementation()); }
+
+    res.status(200).json(data);
+  } catch (e) {
+    next(e);
+  }
 });
 
 app.listen(config.port, function () {
-  console.log(`Listening http://localhost:${config.port}`);
+  debug(`Listening http://localhost:${config.port}`);
 });
+
+/**
+ * @context
+ * For testing on postman, define the env variables
+ * @a client_url | http://localhost:8000
+ * @a user_id | Obtained when sign-in is requested
+ * @a user_movie_id
+ * ##--
+ * @context
+ * To test the post user movie route, un body add
+ * @a "userId": "{{user_id}}",
+ * @a "movieId": "{{movie_id}}"
+*/
