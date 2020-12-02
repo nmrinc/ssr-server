@@ -5,7 +5,7 @@
  * Is the industry-standard protocol for authorization.
  * @context:
  * OAuth 2.0 focuses on client developer simplicity while providing specific authorization flows for web applications, desktop applications, mobile phones, and living room devices
- * --##
+ * ##--
  * @o In this case using Google API & Services. https://console.developers.google.com/
 */
 
@@ -19,16 +19,16 @@ const { OAuth2Strategy } = require('passport-oauth');
 const { config } = require('../../../config');
 
 //@a Define Google OAuth flow urls
-const GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-const GOOGLE_TOKEN_URL = 'https://www.googleapis.com/oauth2/v4/token';
-const GOOGLE_URSERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
+const GOOGLE_AUTHORIZATION_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_ENDPOINT = "https://www.googleapis.com/oauth2/v4/token";
+const GOOGLE_USER_INFO_ENDPOINT = "https://www.googleapis.com/oauth2/v3/userinfo";
 
 //@a Define the OAuth2Strategy
 const oAuth2Strategy = new OAuth2Strategy(
   //@a Pass the request credentials
   {
-    authorizationURL: GOOGLE_AUTHORIZATION_URL,
-    tokenURL: GOOGLE_TOKEN_URL,
+    authorizationURL: GOOGLE_AUTHORIZATION_ENDPOINT,
+    tokenURL: GOOGLE_TOKEN_ENDPOINT,
     clientID: config.googleClientId,
     clientSecret: config.googleClientSecret,
     callbackURL: "/auth/google-oauth/callback"
@@ -55,7 +55,7 @@ const oAuth2Strategy = new OAuth2Strategy(
 //@a Implement how OAuth will define the profile
 oAuth2Strategy.userProfile = (accessToken, done) => {
   //@a If the request was successful, get the data to build the profile.
-  this._oauth2.get(GOOGLE_URSERINFO_URL, accessToken, (err, body) => {
+  this._oauth2.get(GOOGLE_USER_INFO_ENDPOINT, accessToken, (err, body) => {
     if (err) { return done(err); }
 
     try {
