@@ -24,6 +24,9 @@ app.use(helmet());
 //@concept Basic Strategy
 require('./utils/auth/strategies/basic');
 
+//@concept OAuth Strategy
+require('./utils/auth/strategies/oauth');
+
 
 
 app.post("/auth/sign-in", async function (req, res, next) {
@@ -128,6 +131,45 @@ app.delete("/user-movies/:userMovieId", async function (req, res, next) {
   }
 });
 
+//@context OAuth End Points
+//@a Define the get request where passport will authenticate with the google-oauth strategy
+app.get(
+  '/auth/google-oauth',
+  passport.authenticate(
+    "google-oauth",
+    {
+      //@a Define the scopes of the request
+      scope: ['email', 'profile', 'openid']
+    }
+  )
+);
+
+//@a Define the callback request to get the data
+app.get(
+  '/auth/google-oauth/callback',
+  passport.authenticate(
+    "google-oauth",
+    { session: false }
+  ),
+  (req, res, next) => {
+    //@a Verify if the user exists
+    if (!req.user) { next(boom.unauthorized()); }
+
+    //@a Deconstruct the token and user from the req response.
+    const { token, ...user } = req.user;
+
+    //@a Create a cookie that contains the access token.
+    res.cookie("token", token, {
+      httpOnly: !config.dev,
+      secure: !config.dev
+    });
+
+    //@a Response with a status 200 and the data.
+    res.status(200).json(user);
+  }
+);
+
+//@context Define where the server will listen
 app.listen(config.port, function () {
   debug(`Listening http://localhost:${config.port}`);
 });
@@ -143,4 +185,6 @@ app.listen(config.port, function () {
  * To test the post user movie route, un body add
  * @a "userId": "{{user_id}}",
  * @a "movieId": "{{movie_id}}"
+ * ##--
+ *
 */
