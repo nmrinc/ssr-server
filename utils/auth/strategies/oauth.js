@@ -19,9 +19,9 @@ const { OAuth2Strategy } = require('passport-oauth');
 const { config } = require('../../../config');
 
 //@a Define Google OAuth flow urls
-const GOOGLE_AUTHORIZATION_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
-const GOOGLE_TOKEN_ENDPOINT = "https://www.googleapis.com/oauth2/v4/token";
-const GOOGLE_USER_INFO_ENDPOINT = "https://www.googleapis.com/oauth2/v3/userinfo";
+const GOOGLE_AUTHORIZATION_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+const GOOGLE_USER_INFO_ENDPOINT = 'https://www.googleapis.com/oauth2/v3/userinfo';
 
 //@a Define the OAuth2Strategy
 const oAuth2Strategy = new OAuth2Strategy(
@@ -34,7 +34,7 @@ const oAuth2Strategy = new OAuth2Strategy(
     callbackURL: "/auth/google-oauth/callback"
   },
   //@a With an async function with the oauth sign. Request the data.
-  async (accessToken, refreshToken, profile, cb) => {
+  async (accessToken, refreshToken, profile, done) => {
     const { data, status } = await axios({
       url: `${config.apiUrl}/api/auth/sign-provider`,
       method: 'post',
@@ -46,14 +46,15 @@ const oAuth2Strategy = new OAuth2Strategy(
       }
     });
 
-    if (!data || status !== 200) { return cb(boom.unauthorized(), false); }
+    if (!data || status !== 200) { return done(boom.unauthorized(), false); }
 
-    return cb(null, data);
+    return done(null, data);
   }
 );
 
 //@a Implement how OAuth will define the profile
-oAuth2Strategy.userProfile = (accessToken, done) => {
+oAuth2Strategy.userProfile = function (accessToken, done) {
+
   //@a If the request was successful, get the data to build the profile.
   this._oauth2.get(GOOGLE_USER_INFO_ENDPOINT, accessToken, (err, body) => {
     if (err) { return done(err); }
