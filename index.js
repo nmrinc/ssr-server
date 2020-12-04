@@ -1,4 +1,4 @@
-const express = require("express");
+const express = require('express');
 const passport = require('passport');
 const boom = require('@hapi/boom');
 const cookieParser = require('cookie-parser');
@@ -8,7 +8,7 @@ const helmet = require('helmet');
 
 const debug = require('debug')('app:server');
 
-const { config } = require("./config");
+const { config } = require('./config');
 const { THIRTY_DAYS_IN_SEC, TWO_HOURS_IN_SEC } = require('./utils/time');
 
 const app = express();
@@ -27,9 +27,12 @@ require('./utils/auth/strategies/basic');
 //@concept OAuth Strategy
 require('./utils/auth/strategies/oauth');
 
+//@concept Googgle OpenId Auth Strategy
+require('./utils/auth/strategies/google');
 
 
-app.post("/auth/sign-in", async function (req, res, next) {
+
+app.post('/auth/sign-in', async function (req, res, next) {
   //@a Obtain the rememberMe attribute from the req body
   const { rememberMe } = req.body;
 
@@ -65,7 +68,7 @@ app.post("/auth/sign-in", async function (req, res, next) {
   )(req, res, next);
 });
 
-app.post("/auth/sign-up", async function (req, res, next) {
+app.post('/auth/sign-up', async function (req, res, next) {
   const { body: user } = req;
 
   try {
@@ -81,11 +84,11 @@ app.post("/auth/sign-up", async function (req, res, next) {
   }
 });
 
-app.get("/movies", async function (req, res, next) {
+app.get('/movies', async function (req, res, next) {
 
 });
 
-app.post("/user-movies", async function (req, res, next) {
+app.post('/user-movies', async function (req, res, next) {
   try {
     //@a Obtain userMovie from the request body
     const { body: userMovie } = req;
@@ -110,7 +113,7 @@ app.post("/user-movies", async function (req, res, next) {
   }
 });
 
-app.delete("/user-movies/:userMovieId", async function (req, res, next) {
+app.delete('/user-movies/:userMovieId', async function (req, res, next) {
   try {
     //@a Obtain userMovieId from the request params
     const { userMovieId } = req.params;
@@ -136,7 +139,7 @@ app.delete("/user-movies/:userMovieId", async function (req, res, next) {
 app.get(
   '/auth/google-oauth',
   passport.authenticate(
-    "google-oauth",
+    'google-oauth',
     {
       //@a Define the scopes of the request
       scope: ['email', 'profile', 'openid']
@@ -148,7 +151,7 @@ app.get(
 app.get(
   '/auth/google-oauth/callback',
   passport.authenticate(
-    "google-oauth",
+    'google-oauth',
     { session: false }
   ),
   (req, res, next) => {
@@ -159,12 +162,39 @@ app.get(
     const { token, ...user } = req.user;
 
     //@a Create a cookie that contains the access token.
-    res.cookie("token", token, {
+    res.cookie('token', token, {
       httpOnly: !config.dev,
       secure: !config.dev
     });
 
     //@a Response with a status 200 and the data.
+    res.status(200).json(user);
+  }
+);
+
+//@context Google OpenId Strategy
+app.get(
+  '/auth/google',
+  passport.authenticate('google', {
+    scope: ['email', 'profile', 'openid']
+  })
+);
+
+app.get(
+  '/auth/google/callback',
+  passport.authenticate('google', { session: false }),
+  (req, res, next) => {
+    if (!req.user) {
+      next(boom.unauthorized());
+    }
+
+    const { token, ...user } = req.user;
+
+    res.cookie('token', token, {
+      httpOnly: !config.dev,
+      secure: !config.dev
+    });
+
     res.status(200).json(user);
   }
 );
@@ -183,8 +213,8 @@ app.listen(config.port, function () {
  * ##--
  * @context
  * To test the post user movie route, un body add
- * @a "userId": "{{user_id}}",
- * @a "movieId": "{{movie_id}}"
+ * @a 'userId': '{{user_id}}',
+ * @a 'movieId': '{{movie_id}}'
  * ##--
  *
 */
