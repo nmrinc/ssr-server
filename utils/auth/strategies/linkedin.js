@@ -1,24 +1,25 @@
 const passport = require('passport');
 const axios = require('axios');
 const boom = require('@hapi/boom');
-const FacebookStrategy = require('passport-facebook').Strategy;
+var LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
 
 const { config } = require("../../../config");
 
-passport.use(new FacebookStrategy({
-  clientID: config.facebookClientId,
-  clientSecret: config.facebookClientSecret,
-  callbackURL: "/auth/facebook/callback",
-  profileFields: ['id', 'displayName', 'photos', 'email'],
+passport.use(new LinkedInStrategy({
+  clientID: config.linkedinClientId,
+  clientSecret: config.linkedinClientSecret,
+  callbackURL: "/auth/linkedin/callback",
+  scope: ['r_emailaddress', 'r_liteprofile'],
+  state: false
 },
-  async (accessToken, refreshToken, { _json: profile }, done) => {
+  async (accessToken, refreshToken, profile, done) => {
     try {
       const { data, status } = await axios({
         url: `${config.apiUrl}/api/auth/sign-provider`,
         method: "post",
         data: {
-          name: profile.name,
-          email: profile.email,
+          name: profile.displayName,
+          email: profile.emails[0].value,
           password: profile.id,
           apiKeyToken: config.apiKeyToken
         }
