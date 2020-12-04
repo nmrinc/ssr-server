@@ -27,8 +27,11 @@ require('./utils/auth/strategies/basic');
 //@concept OAuth Strategy
 require('./utils/auth/strategies/oauth');
 
-//@concept Googgle OpenId Auth Strategy
+//@concept Google OpenId Auth Strategy
 require('./utils/auth/strategies/google');
+
+//@concept Facebook Auth Strategy
+require('./utils/auth/strategies/facebook');
 
 
 
@@ -198,6 +201,32 @@ app.get(
     res.status(200).json(user);
   }
 );
+
+//@context Facebook OAuth Strategy
+app.get("/auth/facebook", passport.authenticate("facebook", {
+  scope: ["email"]
+})
+);
+
+app.get(
+  "/auth/facebook/callback",
+  passport.authenticate("facebook", { session: false }),
+  (req, res, next) => {
+    if (!req.user) {
+      next(boom.unauthorized());
+    }
+
+    const { token, ...user } = req.user;
+
+    res.cookie("token", token, {
+      httpOnly: !config.dev,
+      secure: !config.dev
+    });
+
+    res.status(200).json(user);
+  }
+);
+
 
 //@context Define where the server will listen
 app.listen(config.port, function () {
