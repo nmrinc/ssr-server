@@ -8,9 +8,9 @@
 const passport = require('passport');
 const axios = require('axios');
 const boom = require('@hapi/boom');
-const { OAuth2Strategy: GoogleStrategy } = require('passport-google-oauth');
+const { OAuth2Strategy: GoogleStrategy } = require("passport-google-oauth");
 
-const { config } = require('../../../config/index');
+const { config } = require('../../../config');
 
 passport.use(
   new GoogleStrategy(
@@ -28,7 +28,7 @@ passport.use(
           data: {
             name: profile.name,
             email: profile.email,
-            password: profile.id,
+            password: profile.sub,
             apiKeyToken: config.apiKeyToken
           }
         });

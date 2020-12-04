@@ -33,6 +33,9 @@ require('./utils/auth/strategies/google');
 //@concept Facebook Auth Strategy
 require('./utils/auth/strategies/facebook');
 
+//@concept LinkedIn Auth Strategy
+require('./utils/auth/strategies/linkedin');
+
 
 
 app.post('/auth/sign-in', async function (req, res, next) {
@@ -211,6 +214,31 @@ app.get("/auth/facebook", passport.authenticate("facebook", {
 app.get(
   "/auth/facebook/callback",
   passport.authenticate("facebook", { session: false }),
+  (req, res, next) => {
+    if (!req.user) {
+      next(boom.unauthorized());
+    }
+
+    const { token, ...user } = req.user;
+
+    res.cookie("token", token, {
+      httpOnly: !config.dev,
+      secure: !config.dev
+    });
+
+    res.status(200).json(user);
+  }
+);
+
+//@context LinkedIn OAuth Strategy
+app.get("/auth/linkedin", passport.authenticate("linkedin", {
+  scope: ['r_emailaddress', 'r_liteprofile']
+})
+);
+
+app.get(
+  "/auth/linkedin/callback",
+  passport.authenticate("linkedin", { session: false }),
   (req, res, next) => {
     if (!req.user) {
       next(boom.unauthorized());
