@@ -1,5 +1,6 @@
 const express = require('express');
 const passport = require('passport');
+const session = require('express-session');
 const boom = require('@hapi/boom');
 const cookieParser = require('cookie-parser');
 const axios = require('axios');
@@ -17,6 +18,12 @@ const app = express();
 app.use(express.json());
 //@o Cookie parser
 app.use(cookieParser());
+//@o As Twitter API requires a session. Pass the session library with the sessionSecret
+app.use(session({ secret: config.sessionSecret }));
+//@o Initialize the session
+app.use(passport.initialize());
+//@o And return the created session
+app.use(passport.session());
 
 app.use(cors());
 app.use(helmet());
@@ -35,6 +42,9 @@ require('./utils/auth/strategies/facebook');
 
 //@concept LinkedIn Auth Strategy
 require('./utils/auth/strategies/linkedin');
+
+//@concept Twitter Auth Strategy
+require('./utils/auth/strategies/twitter');
 
 
 
@@ -206,14 +216,14 @@ app.get(
 );
 
 //@context Facebook OAuth Strategy
-app.get("/auth/facebook", passport.authenticate("facebook", {
-  scope: ["email"]
+app.get('/auth/facebook', passport.authenticate('facebook', {
+  scope: ['email']
 })
 );
 
 app.get(
-  "/auth/facebook/callback",
-  passport.authenticate("facebook", { session: false }),
+  '/auth/facebook/callback',
+  passport.authenticate('facebook', { session: false }),
   (req, res, next) => {
     if (!req.user) {
       next(boom.unauthorized());
@@ -221,7 +231,7 @@ app.get(
 
     const { token, ...user } = req.user;
 
-    res.cookie("token", token, {
+    res.cookie('token', token, {
       httpOnly: !config.dev,
       secure: !config.dev
     });
@@ -231,14 +241,14 @@ app.get(
 );
 
 //@context LinkedIn OAuth Strategy
-app.get("/auth/linkedin", passport.authenticate("linkedin", {
+app.get('/auth/linkedin', passport.authenticate('linkedin', {
   scope: ['r_emailaddress', 'r_liteprofile']
 })
 );
 
 app.get(
-  "/auth/linkedin/callback",
-  passport.authenticate("linkedin", { session: false }),
+  '/auth/linkedin/callback',
+  passport.authenticate('linkedin', { session: false }),
   (req, res, next) => {
     if (!req.user) {
       next(boom.unauthorized());
@@ -246,7 +256,29 @@ app.get(
 
     const { token, ...user } = req.user;
 
-    res.cookie("token", token, {
+    res.cookie('token', token, {
+      httpOnly: !config.dev,
+      secure: !config.dev
+    });
+
+    res.status(200).json(user);
+  }
+);
+
+//@context Twitter OAuth Strategy
+app.get('/auth/twitter', passport.authenticate('twitter'));
+
+app.get(
+  '/auth/twitter/callback',
+  passport.authenticate('twitter', { session: false }),
+  (req, res, next) => {
+    if (!req.user) {
+      next(boom.unauthorized());
+    }
+
+    const { token, ...user } = req.user;
+
+    res.cookie('token', token, {
       httpOnly: !config.dev,
       secure: !config.dev
     });
