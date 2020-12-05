@@ -1,6 +1,7 @@
 const passport = require('passport');
 const axios = require('axios');
 const boom = require('@hapi/boom');
+const { get } = require('lodash');
 var LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
 
 const { config } = require("../../../config");
@@ -19,7 +20,7 @@ passport.use(new LinkedInStrategy({
         method: "post",
         data: {
           name: profile.displayName,
-          email: profile.emails[0].value,
+          email: get(profile, 'emails.0.value', `${profile.username}@linkedin.com`),
           password: profile.id,
           apiKeyToken: config.apiKeyToken
         }
